@@ -46,7 +46,7 @@ public class Budget {
     private LocalDateTime updated_at;
 
     public BigDecimal getAmount() {
-        return null;
+        return this.maxAmount;
     } }
 
 

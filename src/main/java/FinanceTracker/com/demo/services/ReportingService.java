@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,7 @@ public class ReportingService {
 
         List<Budget> userBudgets = budgetRepository.findAllByUserId(userId);
 
-        // ✅ Fixed: group by Category object (not String)
+        // ✅ group by Category object
         Map<Category, List<Transaction>> groupedExpenses =
                 transactions.stream()
                         .filter(t -> "EXPENSE".equalsIgnoreCase(t.getTransactionType()))
@@ -96,22 +97,36 @@ public class ReportingService {
 
         return userBudgets.stream()
                 .map(budget -> {
-                    // ✅ Fixed: use Category object as key, get name separately
                     Category category = budget.getCategory();
                     String categoryName = category != null ? category.getName() : "Uncategorized";
                     BigDecimal budgetAmount = budget.getMaxAmount();
 
-                    // ✅ Fixed: lookup by Category object (matches the map key type)
                     BigDecimal actualExpenses = groupedExpenses
                             .getOrDefault(category, List.of())
                             .stream()
                             .map(Transaction::getAmount)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                    // ✅ Fixed: حساب remaining و percentageUsed و isOverBudget
+                    BigDecimal remaining = budgetAmount.subtract(actualExpenses);
+                    boolean isOverBudget = actualExpenses.compareTo(budgetAmount) > 0;
+                    double percentageUsed = budgetAmount.compareTo(BigDecimal.ZERO) > 0
+                            ? actualExpenses.divide(budgetAmount, 4, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100))
+                            .doubleValue()
+                            : 0.0;
+
                     return BudgetSummaryDto.builder()
+                            .budgetId(budget.getId())
+                            .budgetName(budget.getName())
                             .categoryName(categoryName)
                             .budgetAmount(budgetAmount)
                             .actualSpend(actualExpenses)
+                            .remaining(remaining)
+                            .percentageUsed(percentageUsed)
+                            .isOverBudget(isOverBudget)
+                            .startDate(budget.getStartDate())
+                            .endDate(budget.getEndDate())
                             .build();
                 })
                 .collect(Collectors.toList());

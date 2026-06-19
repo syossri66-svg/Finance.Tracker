@@ -16,9 +16,10 @@ public class BudgetDto {
     @NotBlank(message = "Budget name is required")
     private String name;
 
+    // ✅ Fixed: renamed from 'amount' to 'maxAmount' للـ consistency مع الـ entity
     @NotNull(message = "Budget amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than zero")
-    private BigDecimal amount;
+    private BigDecimal maxAmount;
 
     private String description;
 
@@ -30,8 +31,4 @@ public class BudgetDto {
 
     @NotNull(message = "Category ID is required")
     private Long categoryId;
-
-    public BigDecimal getMaxAmount() {
-        return this.amount;
-    }
 }

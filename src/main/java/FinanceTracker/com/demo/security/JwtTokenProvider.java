@@ -2,6 +2,7 @@ package FinanceTracker.com.demo.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,6 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private long jwtExpirationDate;
 
-    // توليد التوكن
     public String generateToken(Authentication authentication) {
         String username = authentication.getName();
 
@@ -28,25 +28,26 @@ public class JwtTokenProvider {
                 .setSubject(username)
                 .setIssuedAt(currentDate)
                 .setExpiration(expireDate)
-                .signWith(io.jsonwebtoken.SignatureAlgorithm.HS512, jwtSecret)
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
+    // ✅ Fixed: parseClaimsJws() + getSubject() بدل parse() + toString()
     public String getUsername(String token) {
-        String username = Jwts.parser()
+        Claims claims = Jwts.parser()
                 .setSigningKey(jwtSecret)
-                .parse(token)
-                .getBody()
-                .toString();
+                .parseClaimsJws(token)
+                .getBody();
 
-        return username;
+        return claims.getSubject();
     }
 
+    // ✅ Fixed: parseClaimsJws() بدل parse() عشان يتحقق من الـ signature صح
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
                     .setSigningKey(jwtSecret)
-                    .parse(token);
+                    .parseClaimsJws(token);
 
             return true;
         } catch (Exception e) {

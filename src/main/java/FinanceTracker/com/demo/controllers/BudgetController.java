@@ -40,16 +40,16 @@ public class BudgetController {
         return ResponseEntity.ok(budget);
     }
 
-
     @PutMapping("/{id}")
     public ResponseEntity<Budget> updateBudget(@PathVariable Long id, @Valid @RequestBody BudgetDto budgetDto) {
         Budget updatedBudget = budgetService.updateBudget(id, budgetDto);
         return ResponseEntity.ok(updatedBudget);
     }
 
+    // ✅ Fixed: 200 OK with message instead of 204 No Content
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteBudget(@PathVariable Long id) {
         budgetService.deleteBudget(id);
-        return new ResponseEntity<>("Budget deleted successfully!", HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok("Budget deleted successfully!");
     }
 }

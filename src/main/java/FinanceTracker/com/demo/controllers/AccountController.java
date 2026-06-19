@@ -46,9 +46,10 @@ public class AccountController {
         return ResponseEntity.ok(updatedAccount);
     }
 
+    // ✅ Fixed: 200 OK with message instead of 204 No Content
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteAccount(@PathVariable Long id) {
         accountService.deleteAccount(id);
-        return new ResponseEntity<>("Account deleted successfully!", HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok("Account deleted successfully!");
     }
 }

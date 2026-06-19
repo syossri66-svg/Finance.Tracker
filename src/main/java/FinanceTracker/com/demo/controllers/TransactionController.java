@@ -40,16 +40,16 @@ public class TransactionController {
         return new ResponseEntity<>(transaction, HttpStatus.OK);
     }
 
-
     @PutMapping("/{id}")
     public ResponseEntity<Transaction> updateTransaction(@PathVariable Long id, @Valid @RequestBody TransactionDto transactionDto) {
         Transaction updatedTransaction = transactionService.updateTransaction(id, transactionDto);
         return new ResponseEntity<>(updatedTransaction, HttpStatus.OK);
     }
 
+    // ✅ Fixed: 200 OK with message instead of 204 No Content
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTransaction(@PathVariable Long id) {
         transactionService.deleteTransaction(id);
-        return new ResponseEntity<>("Transaction deleted successfully and balance updated.", HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok("Transaction deleted successfully and balance updated.");
     }
 }

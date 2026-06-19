@@ -1,11 +1,9 @@
 package FinanceTracker.com.demo.services;
 
 import FinanceTracker.com.demo.dto.CategoryResponseDto;
-import FinanceTracker.com.demo.dto.CategoryResponseDto;
 import FinanceTracker.com.demo.entities.Category;
 import FinanceTracker.com.demo.entities.User;
 import FinanceTracker.com.demo.repositories.CategoryRepository;
-import jakarta.validation.constraints.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,11 +32,10 @@ public class CategoryService {
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
     }
 
-
     public CategoryResponseDto createCategory(CategoryResponseDto categoryDto) {
         User currentUser = getCurrentUser();
         Category category = modelMapper.map(categoryDto, Category.class);
-        category.setUser(currentUser); // ربط الفئة بالمستخدم الحالي
+        category.setUser(currentUser);
 
         Category savedCategory = categoryRepository.save(category);
         return modelMapper.map(savedCategory, CategoryResponseDto.class);
@@ -82,7 +79,10 @@ public class CategoryService {
         categoryRepository.delete(existingCategory);
     }
 
-    public Category getCategoryEntityById(@NotNull(message = "Category ID is required") Long categoryId) {
-        return null;
+    // ✅ Fixed: returns actual Category entity from DB instead of null
+    public Category getCategoryEntityById(Long categoryId) {
+        User currentUser = getCurrentUser();
+        return categoryRepository.findByIdAndUserId(categoryId, currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Category not found or access denied."));
     }
 }

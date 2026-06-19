@@ -3,18 +3,17 @@ package FinanceTracker.com.demo.services;
 import FinanceTracker.com.demo.dto.BudgetSummaryDto;
 import FinanceTracker.com.demo.dto.FinancialReportDto;
 import FinanceTracker.com.demo.entities.Budget;
+import FinanceTracker.com.demo.entities.Category;
 import FinanceTracker.com.demo.entities.Transaction;
 import FinanceTracker.com.demo.entities.User;
 import FinanceTracker.com.demo.repositories.AccountRepository;
 import FinanceTracker.com.demo.repositories.BudgetRepository;
 import FinanceTracker.com.demo.repositories.TransactionRepository;
-import FinanceTracker.com.demo.entities.Category;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,8 @@ public class ReportingService {
     private final AccountRepository accountRepository;
 
     @Autowired
-    public ReportingService(UserService userService, TransactionRepository transactionRepository, BudgetRepository budgetRepository, AccountRepository accountRepository) {
+    public ReportingService(UserService userService, TransactionRepository transactionRepository,
+                            BudgetRepository budgetRepository, AccountRepository accountRepository) {
         this.userService = userService;
         this.transactionRepository = transactionRepository;
         this.budgetRepository = budgetRepository;
@@ -85,21 +85,23 @@ public class ReportingService {
 
     private List<BudgetSummaryDto> processBudgets(Long userId, List<Transaction> transactions) {
 
-        // Get all budgets of this user
         List<Budget> userBudgets = budgetRepository.findAllByUserId(userId);
 
-        // Group EXPENSE transactions by category
+        // ✅ Fixed: group by Category object (not String)
         Map<Category, List<Transaction>> groupedExpenses =
                 transactions.stream()
-                        .filter(t -> "EXPENSE".equalsIgnoreCase(t.getType()))
+                        .filter(t -> "EXPENSE".equalsIgnoreCase(t.getTransactionType()))
+                        .filter(t -> t.getCategory() != null)
                         .collect(Collectors.groupingBy(Transaction::getCategory));
 
         return userBudgets.stream()
                 .map(budget -> {
+                    // ✅ Fixed: use Category object as key, get name separately
+                    Category category = budget.getCategory();
+                    String categoryName = category != null ? category.getName() : "Uncategorized";
+                    BigDecimal budgetAmount = budget.getMaxAmount();
 
-                    String category = String.valueOf(budget.getCategory());
-                    BigDecimal budgetAmount = budget.getAmount();
-
+                    // ✅ Fixed: lookup by Category object (matches the map key type)
                     BigDecimal actualExpenses = groupedExpenses
                             .getOrDefault(category, List.of())
                             .stream()
@@ -107,10 +109,11 @@ public class ReportingService {
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     return BudgetSummaryDto.builder()
-                            .categoryName(category)
+                            .categoryName(categoryName)
                             .budgetAmount(budgetAmount)
                             .actualSpend(actualExpenses)
                             .build();
                 })
                 .collect(Collectors.toList());
-    }}
+    }
+}

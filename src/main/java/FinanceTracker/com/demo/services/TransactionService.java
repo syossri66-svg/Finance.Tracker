@@ -6,7 +6,6 @@ import FinanceTracker.com.demo.entities.Category;
 import FinanceTracker.com.demo.entities.Transaction;
 import FinanceTracker.com.demo.entities.User;
 import FinanceTracker.com.demo.repositories.TransactionRepository;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,16 +21,14 @@ public class TransactionService {
     private final UserService userService;
     private final AccountService accountService;
     private final CategoryService categoryService;
-    private final ModelMapper modelMapper;
 
     @Autowired
     public TransactionService(TransactionRepository transactionRepository, UserService userService,
-                              AccountService accountService, CategoryService categoryService, ModelMapper modelMapper) {
+                              AccountService accountService, CategoryService categoryService) {
         this.transactionRepository = transactionRepository;
         this.userService = userService;
         this.accountService = accountService;
         this.categoryService = categoryService;
-        this.modelMapper = modelMapper;
     }
 
     private User getCurrentUser() {
@@ -54,17 +51,22 @@ public class TransactionService {
         accountService.save(account);
     }
 
-
     @Transactional
     public Transaction createTransaction(TransactionDto transactionDto) {
         User currentUser = getCurrentUser();
 
         Account account = accountService.getAccountById(transactionDto.getAccountId());
         Category category = categoryService.getCategoryEntityById(transactionDto.getCategoryId());
-        Transaction transaction = modelMapper.map(transactionDto, Transaction.class);
+
+        // ✅ Fixed: manual mapping بدل ModelMapper عشان يتجنب conflict بين accountId/categoryId والـ id
+        Transaction transaction = new Transaction();
         transaction.setUser(currentUser);
         transaction.setAccount(account);
         transaction.setCategory(category);
+        transaction.setAmount(transactionDto.getAmount());
+        transaction.setTransactionType(transactionDto.getTransactionType());
+        transaction.setDescription(transactionDto.getDescription());
+        transaction.setTransactionDate(transactionDto.getTransactionDate());
 
         boolean isIncome = "INCOME".equalsIgnoreCase(transactionDto.getTransactionType());
         updateAccountBalance(account, transactionDto.getAmount(), isIncome, false);
@@ -95,10 +97,8 @@ public class TransactionService {
         existingTransaction.setDescription(transactionDto.getDescription());
         existingTransaction.setTransactionDate(transactionDto.getTransactionDate());
 
-        BigDecimal newAmount = transactionDto.getAmount();
         boolean newIsIncome = "INCOME".equalsIgnoreCase(transactionDto.getTransactionType());
-
-        updateAccountBalance(newAccount, newAmount, newIsIncome, false);
+        updateAccountBalance(newAccount, transactionDto.getAmount(), newIsIncome, false);
 
         return transactionRepository.save(existingTransaction);
     }

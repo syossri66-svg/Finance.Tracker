@@ -24,22 +24,23 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-
     public User registerNewUser(UserCreationDto userDto) {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new RuntimeException("Email is already in use!");
         }
 
         User user = modelMapper.map(userDto, User.class);
-
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
         return userRepository.save(user);
     }
 
-
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
+    // ✅ مضاف: عشان getCurrentUser() يلاقي الـ user بالـ email الجاي من الـ token
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }

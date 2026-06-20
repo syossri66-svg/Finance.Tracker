@@ -28,7 +28,7 @@ public class CategoryService {
 
     private User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userService.findByUsername(username)
+        return userService.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
     }
 
